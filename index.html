@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#020617">
+<title>CineGen AI - Video Studio</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d'
+        }
+      }
+    }
+  }
+};
+</script>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+body { font-family: Inter, sans-serif; }
+.motion-btn.active {
+  border-color: #22c55e;
+  background: rgba(34,197,94,.12);
+  color: #86efac;
+}
+#renderCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.2);
+  border-radius: 8px;
+}
+</style>
+</head>
+
+<body class="min-h-screen bg-slate-950 text-slate-100">
+
+<header class="sticky top-0 z-40 flex items-center justify-between border-b border-slate-800 bg-slate-900/90 px-4 py-3 backdrop-blur lg:px-8">
+  <div class="flex items-center gap-3">
+    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400">
+      <i class="fa-solid fa-clapperboard"></i>
+    </div>
+    <div>
+      <h1 class="font-bold">CineGen AI</h1>
+      <p class="text-xs text-slate-400">Prompt to Cinematic Video Studio</p>
+    </div>
+  </div>
+
+  <button id="apiOpen" class="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs">
+    <i class="fa-solid fa-key mr-1 text-amber-400"></i> API Key
+  </button>
+</header>
+
+<main class="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 p-4 lg:grid-cols-12 lg:p-6">
+
+<section class="flex flex-col gap-5 lg:col-span-5">
+
+<div class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-xl">
+
+<div class="mb-3 flex items-center justify-between">
+<label class="text-sm font-semibold">
+<i class="fa-solid fa-wand-magic-sparkles mr-2 text-brand-500"></i>
+Deskripsi Adegan
+</label>
+
+<button id="enhanceBtn" class="rounded-md border border-brand-500/20 bg-brand-500/10 px-3 py-2 text-xs text-brand-400">
+<i class="fa-solid fa-sparkles mr-1"></i> Optimalkan AI
+</button>
+</div>
+
+<textarea id="promptInput" rows="4"
+class="w-full resize-y rounded-xl border border-slate-800 bg-slate-950 p-3.5 text-sm outline-none focus:border-brand-500"
+placeholder="Contoh: Kucing astronot melintasi cincin Saturnus dengan latar galaksi warna-warni..."></textarea>
+
+<div class="mt-4 grid grid-cols-2 gap-3 border-t border-slate-800 pt-4">
+
+<label class="text-xs text-slate-400">
+Gaya Visual
+<select id="videoStyle" class="mt-2 w-full rounded-lg border border-slate-800 bg-slate-950 p-2.5 text-xs">
+<option>Cinematic Photorealistic</option>
+<option>Anime / Ghibli Style</option>
+<option>Cyberpunk Sci-Fi</option>
+<option>3D Animation</option>
+<option>Vintage 8mm Film</option>
+<option>Epic Fantasy</option>
+</select>
+</label>
+
+<label class="text-xs text-slate-400">
+Durasi Video
+<select id="videoDuration" class="mt-2 w-full rounded-lg border border-slate-800 bg-slate-950 p-2.5 text-xs">
+<option value="5">5 Detik</option>
+<option value="10">10 Detik</option>
+<option value="20" selected>20 Detik</option>
+</select>
+</label>
+
+</div>
+
+<div class="mt-4">
+<p class="mb-2 text-xs text-slate-400">Gerakan Kamera</p>
+
+<div class="grid grid-cols-4 gap-2">
+<button data-motion="Zoom In" class="motion-btn active rounded-lg border border-slate-800 bg-slate-950 px-1 py-2 text-xs">Zoom In</button>
+<button data-motion="Pan Right" class="motion-btn rounded-lg border border-slate-800 bg-slate-950 px-1 py-2 text-xs">Pan Right</button>
+<button data-motion="Cinematic Orbit" class="motion-btn rounded-lg border border-slate-800 bg-slate-950 px-1 py-2 text-xs">Orbit</button>
+<button data-motion="Drone Shot" class="motion-btn rounded-lg border border-slate-800 bg-slate-950 px-1 py-2 text-xs">Drone</button>
+</div>
+</div>
+
+<button id="generateBtn" class="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-emerald-500 px-4 py-3 font-semibold shadow-lg">
+<i class="fa-solid fa-video"></i>
+Generate Video
+</button>
+
+<p class="mt-2 text-center text-[11px] text-slate-500">
+Animasi simulasi yang dapat diunduh sebagai WebM.
+</p>
+</div>
+
+<div class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+<h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Contoh Prompt Populer</h3>
+
+<div class="space-y-2">
+<button data-preset="0" class="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-left text-xs">🚀 Kucing Astronot di Saturnus</button>
+<button data-preset="1" class="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-left text-xs">🏙️ Kota Cyberpunk Neon</button>
+<button data-preset="2" class="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-left text-xs">🐉 Naga di Kastil Awan</button>
+</div>
+</div>
+</section>
+
+<section class="flex flex-col gap-5 lg:col-span-7">
+
+<div class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-xl">
+
+<div class="mb-3 flex items-center justify-between">
+<h2 class="text-sm font-semibold">
+<i class="fa-solid fa-circle-play mr-2 text-brand-500"></i>
+Preview Video
+</h2>
+<span id="statusBadge" class="rounded-full border border-slate-700 bg-slate-800 px-3 py-1 text-xs text-slate-400">Siap Render</span>
+</div>
+
+<div class="relative aspect-video overflow-hidden rounded-xl border border-slate-800 bg-slate-950">
+
+<canvas id="renderCanvas" width="1280" height="720" class="hidden"></canvas>
+
+<div id="placeholderState" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+<i class="fa-solid fa-film mb-4 text-4xl text-slate-600"></i>
+<p class="text-sm text-slate-300">Belum ada video</p>
+<p class="mt-1 text-xs text-slate-500">Masukkan prompt lalu tekan Generate.</p>
+</div>
+
+<div id="loadingState" class="absolute inset-0 hidden flex-col items-center justify-center bg-slate-950/90">
+<div class="mb-4 h-16 w-16 animate-spin rounded-full border-4 border-slate-800 border-t-brand-500"></div>
+<p class="text-sm font-semibold">Menyiapkan scene...</p>
+<p id="loadingText" class="mt-2 text-xs text-slate-500">0%</p>
+</div>
+
+<div id="videoControls" class="absolute inset-x-0 bottom-0 hidden bg-gradient-to-t from-black/90 to-transparent p-4">
+
+<div class="mb-3 flex justify-end">
+<button id="downloadBtn" class="rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold">
+<i class="fa-solid fa-download mr-1"></i> Unduh WebM
+</button>
+</div>
+
+<div class="flex items-center gap-3">
+<button id="playBtn" class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600">
+<i id="playIcon" class="fa-solid fa-pause"></i>
+</button>
+
+<div class="h-1.5 flex-1 overflow-hidden rounded-full bg-white/20">
+<div id="videoProgressBar" class="h-full w-0 bg-brand-500"></div>
+</div>
+
+<span id="videoTimer" class="whitespace-nowrap text-xs">00:00 / 00:20</span>
+</div>
+</div>
+</div>
+</div>
+
+<div class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-xl">
+<h3 class="mb-3 text-sm font-semibold">
+<i class="fa-solid fa-cubes mr-2 text-brand-500"></i>
+Storyboard Multi-Scene
+</h3>
+
+<div id="storyboardList" class="custom-scrollbar max-h-64 space-y-2 overflow-y-auto">
+<p class="rounded-xl border border-slate-800 bg-slate-950 p-4 text-center text-xs text-slate-500">
+Storyboard akan muncul setelah generate.
+</p>
+</div>
+</div>
+
+</section>
+</main>
+
+<div id="apiModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-4">
+<div class="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6">
+
+<div class="mb-3 flex items-center justify-between">
+<h3 class="font-semibold">Gemini API Key</h3>
+<button id="apiClose"><i class="fa-solid fa-xmark"></i></button>
+</div>
+
+<p class="mb-4 text-xs leading-relaxed text-slate-400">
+Versi demo ini tidak memerlukan API Key. Jangan menyimpan API key rahasia di website publik.
+</p>
+
+<input id="apiKeyInput" type="password" autocomplete="off"
+placeholder="API Key (opsional)"
+class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-xs">
+
+<div class="mt-4 flex justify-end gap-2">
+<button id="apiCancel" class="rounded-lg bg-slate-800 px-4 py-2 text-xs">Tutup</button>
+<button id="apiSave" class="rounded-lg bg-brand-600 px-4 py-2 text-xs">Simpan</button>
+</div>
+</div>
+</div>
+
+<div id="toast" class="fixed bottom-5 right-5 z-50 translate-y-20 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-xs opacity-0 shadow-xl transition-all"></div>
+
+<script>
+(() => {
+"use strict";
+
+const $ = id => document.getElementById(id);
+
+const presets = [
+"Kucing astronot mengendarai skateboard di atas cincin Saturnus, galaksi warna-warni, pencahayaan sinematik, detail tinggi",
+"Kota cyberpunk futuristik pada malam hari saat hujan deras, lampu neon holografik terpantul di jalanan basah, mobil terbang melintas",
+"Naga purba bersisik emas terbang di atas kastil megah di lautan awan saat matahari terbenam, fantasi epik"
+];
+
+let motion = "Zoom In";
+let duration = 20;
+let playing = false;
+let raf = 0;
+let startedAt = 0;
+let elapsedBeforePause = 0;
+let recorder = null;
+let chunks = [];
+let toastTimer = null;
+
+const canvas = $("renderCanvas");
+const ctx = canvas.getContext("2d");
+
+const stars = Array.from({length:110}, () => ({
+x:Math.random()*1280,
+y:Math.random()*720,
+r:Math.random()*2+.4
+}));
+
+function toast(message) {
+const el = $("toast");
+el.textContent = message;
+el.classList.remove("translate-y-20","opacity-0");
+clearTimeout(toastTimer);
+toastTimer = setTimeout(() => {
+el.classList.add("translate-y-20","opacity-0");
+},2600);
+}
+
+function setStatus(text) {
+$("statusBadge").textContent = text;
+}
+
+function formatTime(s) {
+return `00:${String(Math.max(0,Math.floor(s))).padStart(2,"0")}`;
+}
+
+function updateTimer(t) {
+$("videoTimer").textContent =
+`${formatTime(Math.min(t,duration))} / ${formatTime(duration)}`;
+
+$("videoProgressBar").style.width =
+`${Math.min(100,t/duration*100)}%`;
+}
+
+function drawFrame(t) {
+
+const w=canvas.width;
+const h=canvas.height;
+const p=t/duration;
+
+const bg=ctx.createLinearGradient(0,0,w,h);
+bg.addColorStop(0,"#07142d");
+bg.addColorStop(.55,"#172554");
+bg.addColorStop(1,"#3b155f");
+
+ctx.fillStyle=bg;
+ctx.fillRect(0,0,w,h);
+
+stars.forEach((s,i)=>{
+let drift=motion==="Pan Right"?p*180:
+motion==="Drone Shot"?p*70:0;
+
+let x=(s.x-drift+1280)%1280;
+let y=(s.y+(motion==="Drone Shot"?p*55:0))%720;
+
+ctx.globalAlpha=.45+.5*Math.abs(Math.sin(t*1.7+i));
+ctx.fillStyle="#fff";
+ctx.beginPath();
+ctx.arc(x,y,s.r,0,Math.PI*2);
+ctx.fill();
+});
+
+ctx.globalAlpha=1;
+
+const pulse=1+Math.sin(t*1.3)*.025;
+const zoom=motion==="Zoom In"?1+p*.18:1;
+
+const cx=640+(motion==="Pan Right"?-p*170:
+motion==="Cinematic Orbit"?Math.sin(p*Math.PI*2)*65:0);
+
+const cy=350+(motion==="Drone Shot"?-p*85:0);
+
+ctx.save();
+ctx.translate(cx,cy);
+ctx.scale(zoom*pulse,zoom*pulse);
+
+const glow=ctx.createRadialGradient(0,0,30,0,0,260);
+glow.addColorStop(0,"rgba(34,211,238,.45)");
+glow.addColorStop(1,"rgba(34,211,238,0)");
+
+ctx.fillStyle=glow;
+ctx.beginPath();
+ctx.arc(0,0,260,0,Math.PI*2);
+ctx.fill();
+
+const planet=ctx.createLinearGradient(-150,-130,150,150);
+planet.addColorStop(0,"#a5f3fc");
+planet.addColorStop(.45,"#6366f1");
+planet.addColorStop(1,"#312e81");
+
+ctx.fillStyle=planet;
+ctx.beginPath();
+ctx.arc(0,0,145,0,Math.PI*2);
+ctx.fill();
+
+ctx.strokeStyle="rgba(226,232,240,.7)";
+ctx.lineWidth=16;
+ctx.beginPath();
+ctx.ellipse(0,15,235,65,-.18,0,Math.PI*2);
+ctx.stroke();
+
+ctx.restore();
+
+const haze=ctx.createLinearGradient(0,500,0,720);
+haze.addColorStop(0,"rgba(15,23,42,0)");
+haze.addColorStop(1,"rgba(2,6,23,.95)");
+
+ctx.fillStyle=haze;
+ctx.fillRect(0,480,w,240);
+
+ctx.fillStyle="rgba(2,6,23,.42)";
+ctx.fillRect(0,0,w,110);
+
+ctx.fillStyle="#e2e8f0";
+ctx.font="600 26px Inter, sans-serif";
+ctx.fillText("CINEGEN AI • CINEMATIC PREVIEW",54,58);
+
+const prompt=$("promptInput").value.trim() ||
+"A cinematic journey beyond imagination";
+
+ctx.fillStyle="#fff";
+ctx.font="600 34px Inter, sans-serif";
+ctx.textAlign="center";
+
+const short=prompt.length>68?prompt.slice(0,65)+"…":prompt;
+ctx.fillText(short,w/2,640);
+
+ctx.fillStyle="#94a3b8";
+ctx.font="18px Inter, sans-serif";
+ctx.fillText(`${$("videoStyle").value} | ${motion}`,w/2,678);
+
+ctx.textAlign="left";
+}
+
+function frame(now) {
+if(!playing) return;
+
+const t=elapsedBeforePause+(now-startedAt)/1000;
+
+drawFrame(Math.min(t,duration));
+updateTimer(t);
+
+if(t>=duration) {
+playing=false;
+elapsedBeforePause=duration;
+$("playIcon").className="fa-solid fa-play";
+setStatus("Selesai");
+return;
+}
+
+raf=requestAnimationFrame(frame);
+}
+
+function play() {
+if(elapsedBeforePause>=duration) elapsedBeforePause=0;
+
+playing=true;
+startedAt=performance.now();
+
+$("playIcon").className="fa-solid fa-pause";
+setStatus("Memutar");
+
+cancelAnimationFrame(raf);
+raf=requestAnimationFrame(frame);
+}
+
+function pause() {
+if(!playing) return;
+
+elapsedBeforePause+=(performance.now()-startedAt)/1000;
+playing=false;
+
+cancelAnimationFrame(raf);
+
+$("playIcon").className="fa-solid fa-play";
+setStatus("Dijeda");
+}
+
+function makeStoryboard() {
+
+const prompt=$("promptInput").value.trim();
+const style=$("videoStyle").value;
+
+const beats=[
+"Establishing shot: memperkenalkan lokasi dan suasana.",
+"Build-up: kamera mendekat dan detail subjek terlihat.",
+"Hero moment: fokus pada aksi utama dengan pencahayaan dramatis.",
+"Closing shot: komposisi berakhir secara sinematik."
+];
+
+const count=duration===5?2:duration===10?3:4;
+
+$("storyboardList").innerHTML="";
+
+for(let i=0;i<count;i++) {
+
+const item=document.createElement("div");
+item.className="rounded-xl border border-slate-800 bg-slate-950 p-3";
+
+const head=document.createElement("div");
+head.className="mb-1 flex justify-between text-xs font-semibold text-brand-400";
+head.textContent=`SCENE ${String(i+1).padStart(2,"0")}`;
+
+const time=document.createElement("span");
+time.className="font-normal text-slate-500";
+time.textContent=`${Math.round(duration/count*i)}–${Math.round(duration/count*(i+1))} detik`;
+
+head.appendChild(time);
+
+const desc=document.createElement("p");
+desc.className="text-xs leading-relaxed text-slate-300";
+desc.textContent=`${beats[i]} ${prompt} Gaya: ${style}. Kamera: ${motion}.`;
+
+item.append(head,desc);
+$("storyboardList").appendChild(item);
+}
+}
+
+async function generate() {
+
+const prompt=$("promptInput").value.trim();
+
+if(!prompt) {
+toast("Masukkan deskripsi adegan terlebih dahulu.");
+$("promptInput").focus();
+return;
+}
+
+duration=Number($("videoDuration").value)||20;
+
+elapsedBeforePause=0;
+playing=false;
+cancelAnimationFrame(raf);
+
+$("placeholderState").classList.add("hidden");
+$("videoControls").classList.add("hidden");
+canvas.classList.add("hidden");
+
+$("loadingState").classList.remove("hidden");
+$("loadingState").classList.add("flex");
+
+setStatus("Menyiapkan");
+
+for(let p=0;p<=100;p+=20) {
+$("loadingText").textContent=`${p}%`;
+await new Promise(r=>setTimeout(r,130));
+}
+
+$("loadingState").classList.add("hidden");
+$("loadingState").classList.remove("flex");
+
+canvas.classList.remove("hidden");
+$("videoControls").classList.remove("hidden");
+
+makeStoryboard();
+drawFrame(0);
+updateTimer(0);
+
+setStatus("Siap Diputar");
+play();
+
+toast("Preview berhasil dibuat.");
+}
+
+function enhancePrompt() {
+
+const input=$("promptInput");
+const p=input.value.trim();
+
+if(!p) {
+toast("Isi prompt terlebih dahulu.");
+return;
+}
+
+const style=$("videoStyle").value;
+
+input.value=
+`${p}. Visual style: ${style}. Cinematic composition, clear subject, rich environmental details, dramatic lighting, realistic depth, smooth motion, professional color grading, high visual fidelity. Camera movement: ${motion}.`;
+
+toast("Prompt berhasil dioptimalkan secara lokal.");
+}
+
+function download() {
+
+if(!canvas.captureStream || !window.MediaRecorder) {
+toast("Browser ini belum mendukung rekaman WebM.");
+return;
+}
+
+const stream=canvas.captureStream(30);
+chunks=[];
+
+let mime="video/webm;codecs=vp9";
+
+if(!MediaRecorder.isTypeSupported(mime)) {
+mime="video/webm";
+}
+
+try {
+recorder=new MediaRecorder(stream,{mimeType:mime});
+} catch(e) {
+toast("Tidak dapat memulai perekaman.");
+return;
+}
+
+recorder.ondataavailable=e=>{
+if(e.data && e.data.size) chunks.push(e.data);
+};
+
+recorder.onstop=()=>{
+
+const blob=new Blob(chunks,{type:"video/webm"});
+const url=URL.createObjectURL(blob);
+
+const a=document.createElement("a");
+a.href=url;
+a.download="cinegen-preview.webm";
+
+document.body.appendChild(a);
+a.click();
+a.remove();
+
+setTimeout(()=>URL.revokeObjectURL(url),60000);
+
+stream.getTracks().forEach(t=>t.stop());
+
+$("downloadBtn").disabled=false;
+toast("Video WebM berhasil diunduh.");
+};
+
+recorder.start();
+
+$("downloadBtn").disabled=true;
+
+toast("Merekam video...");
+
+if(!playing) {
+elapsedBeforePause=0;
+play();
+}
+
+const check=()=>{
+
+if(!playing && elapsedBeforePause>=duration) {
+
+if(recorder && recorder.state!=="inactive") {
+recorder.stop();
+}
+
+} else if(recorder && recorder.state!=="inactive") {
+setTimeout(check,150);
+}
+
+};
+
+setTimeout(check,150);
+}
+
+// Camera buttons
+document.querySelectorAll("[data-motion]").forEach(btn=>{
+btn.addEventListener("click",()=>{
+
+motion=btn.dataset.motion;
+
+document.querySelectorAll(".motion-btn").forEach(b=>{
+b.classList.toggle("active",b===btn);
+});
+
+toast(`Kamera: ${motion}`);
+
+});
+});
+
+// Preset buttons
+document.querySelectorAll("[data-preset]").forEach(btn=>{
+btn.addEventListener("click",()=>{
+
+$("promptInput").value=presets[Number(btn.dataset.preset)]||"";
+toast("Preset prompt dimuat.");
+
+});
+});
+
+// Main buttons
+$("generateBtn").addEventListener("click",generate);
+$("enhanceBtn").addEventListener("click",enhancePrompt);
+$("playBtn").addEventListener("click",()=>playing?pause():play());
+$("downloadBtn").addEventListener("click",download);
+
+// API modal
+const modal=$("apiModal");
+
+function openModal() {
+modal.classList.remove("hidden");
+modal.classList.add("flex");
+}
+
+function closeModal() {
+modal.classList.add("hidden");
+modal.classList.remove("flex");
+}
+
+$("apiOpen").addEventListener("click",openModal);
+$("apiClose").addEventListener("click",closeModal);
+$("apiCancel").addEventListener("click",closeModal);
+
+$("apiSave").addEventListener("click",()=>{
+sessionStorage.setItem("cinegen_api_key_demo",$("apiKeyInput").value);
+closeModal();
+toast("Disimpan untuk sesi ini. Demo belum menggunakan API.");
+});
+
+modal.addEventListener("click",e=>{
+if(e.target===modal) closeModal();
+});
+
+drawFrame(0);
+
+})();
+</script>
+</body>
+  </html>
+  
