@@ -34,9 +34,10 @@ jobs:
           cp -r ../index.html www/index.html
           cordova build android --release
 
-      - name: Upload APK Artifact
+      - name: Find and Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: CineGen-APK
-          path: myapp/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
-          
+          path: |
+            myapp/platforms/android/app/build/outputs/apk/release/*.apk
+            myapp/platforms/android/app/build/outputs/apk/debug/*.apk
