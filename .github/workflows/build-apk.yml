@@ -12,54 +12,126 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 17
+      - name: Generate Android Project
+        run: |
+          mkdir -p project/app/src/main/assets
+          mkdir -p project/app/src/main/java/com/cinegen/app
+          mkdir -p project/app/src/main/res/values
 
-      - name: Create WebAPK Project
-        run: |
-          mkdir -p android-app/www
-          cp index.html android-app/www/index.html
-          cd android-app
-          npm init -y
-          npm install express
-          
-      - name: Build Simple Wrapper APK using Bubblewrap / PWABuilder CLI
-        run: |
-          npm install -g @bubblewrap/cli
-          # Membuatikon danikon minimal agar cli tidak error
-          mkdir -p android-app/assets
-          
-      - name: Compile HTML to Android WebView APK using WebView Gold / Webview Builder
-        run: |
-          # Menggunakan Gradle build wrapper mandiri yang dijamin sukses
-          cd android-app
-          cat << 'EOF' > build.sh
-          echo "Building APK package..."
+          # Salin index.html utama ke assets Android
+          cp index.html project/app/src/main/assets/index.html
+
+          # AndroidManifest.xml
+          cat << 'EOF' > project/app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.cinegen.app">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application
+                  android:label="CineGen AI"
+                  android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
           EOF
-          chmod +x build.sh
-          ./build.sh
 
-      - name: Package HTML into APK (Alternative Native WebView)
-        run: |
-          # Mengunduh template Android Studio WebView siap pakai
-          git clone https://github.com/sabamch/webview-android-app.git temp-android
-          rm -rf temp-android/app/src/main/assets/index.html
-          cp index.html temp-android/app/src/main/assets/index.html
-          
-          cd temp-android
-          chmod +x gradlew
-          ./gradlew assembleDebug
-          
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: CineGen-APK
-          path: temp-android/app/build/outputs/apk/debug/app-debug.apk
+          # MainActivity.java
+          cat << 'EOF' > project/app/src/main/java/com/cinegen/app/MainActivity.java
+          package com.cinegen.app;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+
+          public class MainActivity extends Activity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  WebView webView = new WebView(this);
+                  WebSettings settings = webView.getSettings();
+                  settings.setJavaScriptEnabled(true);
+                  settings.setDomStorageEnabled(true);
+                  webView.setWebViewClient(new WebViewClient());
+                  webView.loadUrl("file:///android_asset/index.html");
+                  setContentView(webView);
+              }
+          }
+          EOF
+
+          # build.gradle (app)
+          cat << 'EOF' > project/app/build.gradle
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.cinegen.app'
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.cinegen.app"
+                  minSdk 21
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+          }
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+          }
+          EOF
+
+          # settings.gradle
+          cat << 'EOF' > project/settings.gradle
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "CineGen"
+          include ':app'
+          EOF
+
+          # build.gradle (root)
+          cat << 'EOF' > project/build.gradle
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.1.2'
+              }
+          }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          EOF
+
+          # gradle-wrapper.properties
+          mkdir -p project/gradle/wrapper
+          cat << 'EOF' > project/gradle
           
